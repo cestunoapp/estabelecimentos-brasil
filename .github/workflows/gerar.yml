@@ -1,0 +1,124 @@
+# Gera os estabelecimentos do mês (Receita + IBGE) e publica como uma versão (Release) deste repositório.
+# Não usa nenhuma chave: só baixa dados abertos do governo e publica com o token do próprio GitHub.
+name: Gerar estabelecimentos
+on:
+  schedule:
+    - cron: "0 7 20 * *"     # dia 20 de cada mês, às 4h (Brasília); a Receita publica no meio do mês
+  workflow_dispatch:
+    inputs:
+      ufs:
+        description: "Estados (ex.: GO,DF). Vazio = todos (só com todos a versão é publicada como a mais nova)"
+        required: false
+      receita_base:
+        description: "Só se a Receita mudar de lugar: endereço da pasta, ou nextcloud:servidor|código do link|pasta"
+        required: false
+permissions:
+  contents: read
+concurrency:
+  group: gerar
+  cancel-in-progress: false
+
+jobs:
+  receita:
+    name: Receita (CNPJ)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    outputs:
+      ufs: ${{ steps.ufs.outputs.lista }}
+      mes: ${{ steps.ufs.outputs.mes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Baixar a Receita e separar os estabelecimentos
+        env:
+          RECEITA_BASE: ${{ github.event.inputs.receita_base }}
+          UFS: ${{ github.event.inputs.ufs }}
+        run: python3 scripts/gerar.py receita --saida parcial ${UFS:+--ufs "$UFS"}
+      - name: Estados e mês
+        id: ufs
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          ufs = sorted(f[:2] for f in os.listdir("parcial") if f.endswith(".json.gz"))
+          print("lista=" + json.dumps(ufs))
+          print("mes=" + json.load(open("parcial/_receita.json"))["mes"])
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: parcial
+          path: parcial/
+          retention-days: 3
+          if-no-files-found: error
+
+  posicionar:
+    name: Posição (${{ matrix.uf }})
+    needs: receita
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 8          # gentil com o servidor do IBGE
+      matrix:
+        uf: ${{ fromJSON(needs.receita.outputs.ufs) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: parcial
+          path: parcial
+      - name: Achar a posição pelo endereço (CNEFE)
+        run: python3 scripts/gerar.py posicionar --uf ${{ matrix.uf }} --entrada parcial --saida saida
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: saida-${{ matrix.uf }}
+          path: saida/
+          retention-days: 3
+          if-no-files-found: error
+
+  publicar:
+    name: Publicar a versão
+    needs: [receita, posicionar]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write          # só este passo escreve: cria a versão (Release)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: parcial
+          path: parcial
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: saida-*
+          path: saida
+          merge-multiple: true
+      - name: Índice (quantidades e impressões digitais)
+        env:
+          UFS: ${{ github.event.inputs.ufs }}
+          MES: ${{ needs.receita.outputs.mes }}
+        run: python3 scripts/gerar.py indice --saida saida --receita parcial/_receita.json --versao "$MES" ${UFS:+--parcial}
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UFS: ${{ github.event.inputs.ufs }}
+          MES: ${{ needs.receita.outputs.mes }}
+        run: |
+          if [ -n "$UFS" ]; then TAG="$MES-parcial-$GITHUB_RUN_NUMBER"; EXTRA="--prerelease --latest=false"; else TAG="$MES"; EXTRA="--latest"; fi
+          python3 - "$TAG" > notas.md <<'PY'
+          import json, sys
+          i = json.load(open("saida/indice.json", encoding="utf-8"))
+          tot = sum(e["total"] for e in i["estados"].values())
+          print(f"Estabelecimentos ativos da Receita de **{i['receita_mes']}**, com a posição pelo CNEFE (IBGE). Total: **{tot:,}**".replace(",", "."))
+          print()
+          print("| Estado | Estabelecimentos | Com posição |")
+          print("|---|---:|---:|")
+          for uf, e in sorted(i["estados"].items()):
+              print(f"| {uf} | {e['total']} | {e['com_posicao']} |")
+          print()
+          print("Fontes: Receita Federal do Brasil (Dados Abertos do CNPJ) e IBGE (CNEFE, Censo 2022). Sem MEI, sem razão social, sem sócios, telefone ou e-mail.")
+          PY
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" saida/*.csv.gz saida/indice.json --clobber
+          else
+            gh release create "$TAG" saida/*.csv.gz saida/indice.json --title "Estabelecimentos $TAG" --notes-file notas.md $EXTRA
+          fi
