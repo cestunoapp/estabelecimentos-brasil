@@ -122,3 +122,8 @@ jobs:
           else
             gh release create "$TAG" saida/*.csv.gz saida/indice.json --title "Estabelecimentos $TAG" --notes-file notas.md $EXTRA
           fi
+      - name: Publicar a página de busca
+        if: ${{ github.event.inputs.ufs == '' || github.event.inputs.ufs == null }}   # só com todos os estados
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publicar-pagina.sh saida

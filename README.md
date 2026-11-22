@@ -5,6 +5,8 @@ Supermercados, atacarejos, minimercados e farmácias **ativos** de todo o Brasil
 - **Receita Federal do Brasil:** Dados Abertos do CNPJ (estabelecimentos, municípios, Simples Nacional);
 - **IBGE:** CNEFE, Cadastro Nacional de Endereços para Fins Estatísticos (Censo Demográfico 2022), para achar a posição pelo endereço.
 
+**Buscar:** [cestunoapp.github.io/estabelecimentos-brasil](https://cestunoapp.github.io/estabelecimentos-brasil/), por estado, cidade, tipo e nome.
+
 Os arquivos ficam em [Releases](../../releases): uma versão por mês (ex.: `2026-11`), com um arquivo por estado.
 
 ## Arquivos
@@ -54,7 +56,8 @@ O GitHub Actions deste repositório roda no dia 20 de cada mês ([`gerar.yml`](.
 
 1. baixa a base de CNPJ da Receita e separa os estabelecimentos dos tipos acima;
 2. para cada estado, em paralelo, acha a posição pelo endereço no CNEFE;
-3. publica a versão do mês, com o `indice.json`.
+3. publica a versão do mês, com o `indice.json`;
+4. atualiza a página de busca (ramo `gh-pages`, servido pelo GitHub Pages).
 
 Não usa nenhuma chave nem senha: só dados abertos. O script ([`scripts/gerar.py`](scripts/gerar.py)) usa só a biblioteca padrão do Python.
 

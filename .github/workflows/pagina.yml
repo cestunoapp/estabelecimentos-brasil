@@ -1,0 +1,32 @@
+# Publica a página de busca de novo (com os dados da versão mais nova) quando a pasta site/ muda.
+# A geração mensal (gerar.yml) também publica a página no fim.
+name: Página de busca
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "scripts/pagina.py", "scripts/publicar-pagina.sh"]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: pagina
+  cancel-in-progress: true
+jobs:
+  pagina:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Baixar a versão mais nova
+        id: versao
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view --json tagName >/dev/null 2>&1; then echo "Ainda não há versão publicada: nada a fazer."; echo "tem=nao" >> "$GITHUB_OUTPUT"; exit 0; fi
+          mkdir -p versao && gh release download --dir versao --pattern '*.csv.gz' --pattern 'indice.json'
+          echo "tem=sim" >> "$GITHUB_OUTPUT"
+      - name: Publicar a página
+        if: steps.versao.outputs.tem == 'sim'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publicar-pagina.sh versao
