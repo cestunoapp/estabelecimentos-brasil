@@ -119,6 +119,7 @@ jobs:
           PY
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" saida/*.csv.gz saida/indice.json --clobber
+            gh release edit "$TAG" --notes-file notas.md
           else
             gh release create "$TAG" saida/*.csv.gz saida/indice.json --title "Estabelecimentos $TAG" --notes-file notas.md $EXTRA
           fi
