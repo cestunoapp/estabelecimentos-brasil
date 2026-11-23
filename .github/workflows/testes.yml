@@ -10,5 +10,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Nenhum segredo no repositório
+        run: python3 scripts/verificar-segredos.py .
       - name: Testes do script
         run: python3 -W ignore -m unittest discover -s tests -v

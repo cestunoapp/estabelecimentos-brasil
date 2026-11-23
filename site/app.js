@@ -30,7 +30,7 @@ async function json(url) { const r = await fetch(url, { cache: "no-cache" }); if
 async function iniciar() {
   try { indice = await json("dados/indice.json"); }
   catch (e) { el.estado.textContent = "Não foi possível carregar os dados agora. Tente de novo em alguns minutos."; return; }
-  if (indice.receita_mes) el.fonte.textContent = `Dados da Receita Federal de ${mesBR(indice.receita_mes)} e do IBGE (CNEFE, Censo 2022). Só estabelecimentos ativos; sem MEI.`;
+  if (indice.receita_mes) el.fonte.textContent = `Dados da Receita Federal de ${mesBR(indice.receita_mes)} e do IBGE (CNEFE, Censo 2022). Só estabelecimentos ativos; sem MEI nem Empresário Individual.`;
   if (indice.versao) el.baixar.href = `https://github.com/${indice.repo}/releases/tag/${indice.versao}`;
   const ufs = Object.keys(indice.estados).sort((a, b) => UF_NOME[a].localeCompare(UF_NOME[b]));
   el.uf.innerHTML = `<option value="">Escolha o estado</option>` + ufs.map(u => `<option value="${u}">${UF_NOME[u]} (${fmtNum(indice.estados[u].total)})</option>`).join("");

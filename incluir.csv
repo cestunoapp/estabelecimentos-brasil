@@ -1,4 +1,4 @@
 # Estabelecimentos que entram mesmo com outra atividade principal na Receita (ex.: padaria que é mercado).
 # Uma linha por CNPJ (14 números, com ou sem pontos). tipo: hiper, super, atacarejo, mini ou farmacia.
-# Só entram se estiverem ATIVOS e não forem MEI.
+# Só entram se estiverem ATIVOS e não forem MEI nem Empresário Individual.
 cnpj;tipo;observacao

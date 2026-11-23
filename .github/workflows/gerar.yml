@@ -115,7 +115,7 @@ jobs:
           for uf, e in sorted(i["estados"].items()):
               print(f"| {uf} | {e['total']} | {e['com_posicao']} |")
           print()
-          print("Fontes: Receita Federal do Brasil (Dados Abertos do CNPJ) e IBGE (CNEFE, Censo 2022). Sem MEI, sem razão social, sem sócios, telefone ou e-mail.")
+          print("Fontes: Receita Federal do Brasil (Dados Abertos do CNPJ) e IBGE (CNEFE, Censo 2022). Sem MEI nem Empresário Individual, sem razão social, sócios, telefone ou e-mail.")
           PY
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" saida/*.csv.gz saida/indice.json --clobber

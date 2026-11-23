@@ -99,6 +99,22 @@ class Testes(unittest.TestCase):
         with self.assertRaises(SystemExit):  # sem --parcial, falta de estado é erro
             R.cmd_indice(argparse.Namespace(saida=d, receita=os.path.join(d, "_receita.json"), versao="2026-10", parcial=False))
 
+    def test_empresario_individual_fica_de_fora(self):
+        emp = texto([['11111111', 'MARIA DA SILVA 12345678901', '2135', '50', '1000,00', '01', ''],
+                     ['22222222', 'SUPERMERCADO X LTDA', '2062', '49', '1000,00', '03', ''],
+                     ['33333333', 'JOAO "ZE"; SOUZA', '2135', '50', '1,00', '01', '']])
+        fora = R.ler_naturezas(emp, {"11111111", "22222222"})
+        self.assertEqual(fora, {"11111111"})  # 33333333 não interessa (não está entre os estabelecimentos)
+        por_uf = {"GO": [{"cnpj": "11111111000111"}, {"cnpj": "22222222000122"}]}
+        self.assertEqual(R.tirar_basicos(por_uf, fora), 1)
+        self.assertEqual([e["cnpj"] for e in por_uf["GO"]], ["22222222000122"])
+
+    def test_endereco_sem_numeros_longos(self):
+        e = R.montar_endereco("AREA", "POV MATO PRETO 8464401651109200JF623 RURAL", "SN", "AREA RURAL LAPA")
+        self.assertNotIn("8464401651109200", e)
+        self.assertEqual(R.montar_endereco("RUA", "1 DE JULHO QUADRA 01", "120", "CENTRO"), "Rua 1 de Julho Quadra 01, 120 - Centro")
+        self.assertEqual(R.sem_numeros_longos("Padrao da Celtins 0508300006281 lote"), "Padrao da Celtins lote")
+
     def test_mes_da_pasta(self):
         self.assertEqual(R.mes_da_pasta("https://x/public.php/webdav/Dados/Cadastros/CNPJ/2026-10/"), "2026-10")
 
@@ -144,6 +160,7 @@ class Nextcloud(unittest.TestCase):
         for i in range(10):
             arquivos[f"2026-11/Estabelecimentos{i}.zip"] = zipado("e.csv", "")
             arquivos[f"2026-10/Estabelecimentos{i}.zip"] = zipado("e.csv", "")
+            arquivos[f"2026-10/Empresas{i}.zip"] = zipado("p.csv", "")
         arquivos["2026-10/Municipios.zip"] = zipado("m.csv", ""); arquivos["2026-10/Simples.zip"] = zipado("s.csv", "")
         baixados = []
         def falso(url, destino, tentativas=4, cab=None):
@@ -158,7 +175,7 @@ class Nextcloud(unittest.TestCase):
                 R.ler_receita("x/2026-11/", {}, ["TO"], tmp)          # mês novo incompleto: recusa
             # recusa logo, sem baixar os 10 arquivos de estabelecimentos à toa
             self.assertFalse([b for b in baixados if b.startswith("2026-11/Estab")])
-            por_uf, mei = R.ler_receita("x/2026-10/", {}, ["TO"], tmp)  # mês anterior: segue
+            por_uf, mei, ei = R.ler_receita("x/2026-10/", {}, ["TO"], tmp)  # mês anterior: segue
             self.assertEqual(por_uf, {})
         finally:
             R.baixar = original

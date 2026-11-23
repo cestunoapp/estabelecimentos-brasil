@@ -12,5 +12,8 @@ cd "$pub"
 git init -q -b gh-pages
 git add -A
 git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Página de busca ($(python3 -c 'import json;print(json.load(open("dados/indice.json"))["versao"])'))"
-git push -q --force "https://x-access-token:${GH_TOKEN:?}@github.com/${GITHUB_REPOSITORY:?}.git" gh-pages
+# O token vai num cabeçalho só deste comando (nunca no endereço, que pode aparecer em mensagem de erro).
+auth="$(printf 'x-access-token:%s' "${GH_TOKEN:?}" | base64 -w0)"
+echo "::add-mask::$auth"
+git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push -q --force "https://github.com/${GITHUB_REPOSITORY:?}.git" gh-pages
 echo "Página publicada no ramo gh-pages."

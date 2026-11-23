@@ -47,7 +47,8 @@ Um estabelecimento registrado com outra atividade (por exemplo, uma padaria que 
 ## Privacidade (LGPD)
 
 - Só entram estabelecimentos **ativos**.
-- **MEI fica de fora:** o nome fantasia de um MEI costuma ser o nome do dono, e o endereço, a casa dele.
+- **MEI e Empresário Individual ficam de fora:** nesses casos a empresa é a própria pessoa; o nome fantasia costuma ser o nome dela, e o endereço, a casa.
+- Sequências longas de números são tiradas do nome e do endereço.
 - Não usa razão social, sócios, telefone nem e-mail.
 
 ## Como é gerado
@@ -59,7 +60,7 @@ O GitHub Actions deste repositório roda no dia 20 de cada mês ([`gerar.yml`](.
 3. publica a versão do mês, com o `indice.json`;
 4. atualiza a página de busca (ramo `gh-pages`, servido pelo GitHub Pages).
 
-Não usa nenhuma chave nem senha: só dados abertos. O script ([`scripts/gerar.py`](scripts/gerar.py)) usa só a biblioteca padrão do Python.
+Não usa nenhuma chave nem senha: só dados abertos. Os testes conferem a cada envio que nenhum arquivo tem chave, senha ou token ([`scripts/verificar-segredos.py`](scripts/verificar-segredos.py)). O script ([`scripts/gerar.py`](scripts/gerar.py)) usa só a biblioteca padrão do Python.
 
 ## Licença
 

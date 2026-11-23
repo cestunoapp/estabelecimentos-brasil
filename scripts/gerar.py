@@ -12,7 +12,9 @@ Roda no GitHub Actions deste repositório, uma vez por mês, em três passos:
 LGPD: só lê CNPJ, nome fantasia, situação, CNAE e endereço do estabelecimento. Não lê razão social
 (que, no MEI, traz nome e CPF do dono), sócios, telefone nem e-mail. Sequências longas de números
 (possível CPF) são tiradas do nome. MEI fica de fora por inteiro (arquivo Simples da Receita): o nome
-fantasia de um MEI costuma ser o nome do dono e o endereço, a casa dele.
+fantasia de um MEI costuma ser o nome do dono e o endereço, a casa dele. Pelo mesmo motivo, o Empresário
+Individual (natureza jurídica 213-5, arquivo Empresas da Receita: só a natureza é lida) também fica de fora.
+Sequências longas de números também são tiradas do endereço.
 
 Só usa a biblioteca padrão do Python.
 """
@@ -60,8 +62,13 @@ def numero(s):
     d = so_digitos(s)
     return d.lstrip("0") or None
 
+def sem_numeros_longos(s):
+    """Tira sequências longas de números (código de medidor, de lote, possível CPF) de um texto."""
+    return re.sub(r"\s+", " ", re.sub(r"[\w-]*\d[\d.\-/ ]{8,}\d[\w-]*", " ", s or "")).strip()
+
 def montar_endereco(tipo, logradouro, num, bairro):
-    rua = titulo(" ".join(x for x in [tipo or "", logradouro or ""] if x).strip())
+    rua = titulo(sem_numeros_longos(" ".join(x for x in [tipo or "", logradouro or ""] if x).strip()))
+    bairro = sem_numeros_longos(bairro)
     if not rua: return None
     n = numero(num)
     end = rua + ", " + (n if n else "s/n")
@@ -106,7 +113,7 @@ def ler_estabelecimentos(arquivo_texto, municipios, ufs, saida, incluir=None):
         saida.setdefault(uf, []).append({
             "cnpj": cnpj, "tipo": tipo, "cnae": linha[11].strip(), "nome": limpar_nome(linha[4]),
             "endereco": montar_endereco(linha[13], linha[14], linha[15], linha[17]),
-            "bairro": titulo(linha[17].strip()) or None,
+            "bairro": titulo(sem_numeros_longos(linha[17])) or None,
             "cep": so_digitos(linha[18])[:8], "num": numero(linha[15]),
             "cidade": titulo(municipios.get(linha[20].strip(), "")) or None, "uf": uf})
         n += 1
@@ -269,6 +276,25 @@ def baixar_zip(url, destino, cab):
         print(f"  {url.rsplit('/', 1)[-1]} veio incompleto; baixando de novo", file=sys.stderr)
     raise zipfile.BadZipFile(url.rsplit("/", 1)[-1] + " não é um zip completo")
 
+# Natureza jurídica 213-5 = Empresário (Individual): a empresa É a pessoa (como no MEI); o nome fantasia
+# costuma ser o nome dela e o endereço, a casa. Fica de fora, como o MEI.
+NATUREZA_PESSOA = {"2135"}
+
+def ler_naturezas(arquivo_texto, basicos):
+    """Empresas da Receita: só cnpj_basico (coluna 0) e natureza jurídica (coluna 2); a razão social não é lida."""
+    fora = set()
+    for linha in csv.reader(arquivo_texto, delimiter=";", quotechar='"'):
+        if len(linha) > 2 and linha[0] in basicos and linha[2].strip() in NATUREZA_PESSOA: fora.add(linha[0])
+    return fora
+
+def tirar_basicos(por_uf, fora):
+    n = 0
+    for uf in por_uf:
+        antes = len(por_uf[uf])
+        por_uf[uf] = [e for e in por_uf[uf] if e["cnpj"][:8] not in fora]
+        n += antes - len(por_uf[uf])
+    return n
+
 def ler_receita(pasta, cab, ufs, tmp, incluir=None):
     z = baixar_zip(pasta + "Municipios.zip", os.path.join(tmp, "m.zip"), cab)
     municipios = {}
@@ -286,7 +312,16 @@ def ler_receita(pasta, cab, ufs, tmp, incluir=None):
     mei = set()
     for t in textos_do_zip(simples, "latin-1"): mei |= ler_mei(t, basicos)
     os.remove(simples)
-    return por_uf, tirar_mei(por_uf, mei)
+    mei_fora = tirar_mei(por_uf, mei)
+    basicos = {e["cnpj"][:8] for est in por_uf.values() for e in est}
+    pessoa = set()
+    for i in range(10 if basicos else 0):
+        z = baixar_zip(pasta + f"Empresas{i}.zip", os.path.join(tmp, "p.zip"), cab)
+        for t in textos_do_zip(z, "latin-1"): pessoa |= ler_naturezas(t, basicos)
+        os.remove(z)
+    ei_fora = tirar_basicos(por_uf, pessoa)
+    print(f"Empresário Individual fora: {ei_fora}")
+    return por_uf, mei_fora, ei_fora
 
 def mes_da_pasta(pasta):
     m = re.findall(r"(\d{4}-\d{2})", pasta)
@@ -298,11 +333,11 @@ def cmd_receita(a):
     incluir = ler_incluir(a.incluir)
     bases = [os.environ["RECEITA_BASE"]] if os.environ.get("RECEITA_BASE") else RECEITA_BASES
     tmp = tempfile.mkdtemp()
-    por_uf = mei_fora = None
+    por_uf = mei_fora = ei_fora = None
     for pasta, cab in pastas_mais_novas(bases):
         print("Receita:", pasta)
         try:
-            por_uf, mei_fora = ler_receita(pasta, cab, ufs, tmp, incluir)
+            por_uf, mei_fora, ei_fora = ler_receita(pasta, cab, ufs, tmp, incluir)
             break
         except (zipfile.BadZipFile, SystemExit) as e:
             # arquivo incompleto (a Receita ainda está publicando o mês) ou que não baixou: tenta o mês anterior
@@ -313,7 +348,7 @@ def cmd_receita(a):
         with gzip.open(os.path.join(a.saida, uf + ".json.gz"), "wt", encoding="utf-8") as f:
             json.dump(por_uf.get(uf, []), f, ensure_ascii=False)
     with open(os.path.join(a.saida, "_receita.json"), "w", encoding="utf-8") as f:
-        json.dump({"mes": mes_da_pasta(pasta), "mei_fora": mei_fora, "incluidos": len(incluir)}, f)
+        json.dump({"mes": mes_da_pasta(pasta), "mei_fora": mei_fora, "empresario_individual_fora": ei_fora, "incluidos": len(incluir)}, f)
 
 def cmd_posicionar(a):
     uf = a.uf.upper()
@@ -357,7 +392,7 @@ def cmd_indice(a):
     faltam = [u for u in UFS if u not in estados]
     if faltam and not a.parcial: raise SystemExit("Faltam estados: " + ", ".join(faltam))
     indice = {"versao": a.versao, "receita_mes": rec.get("mes"), "gerado_em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-              "colunas": COLUNAS, "tipos": list(TIPOS), "mei_fora": rec.get("mei_fora"),
+              "colunas": COLUNAS, "tipos": list(TIPOS), "mei_fora": rec.get("mei_fora"), "empresario_individual_fora": rec.get("empresario_individual_fora"),
               "fontes": ["Receita Federal do Brasil: Dados Abertos do CNPJ", "IBGE: CNEFE, Censo Demográfico 2022"],
               "estados": estados}
     with open(os.path.join(a.saida, "indice.json"), "w", encoding="utf-8") as f:
