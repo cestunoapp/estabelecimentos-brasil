@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estabelecimentos do Brasil</title>
+<meta name="description" content="Busque supermercados, atacarejos, minimercados e farmácias ativos em todo o Brasil, com endereço e posição no mapa. Dados abertos da Receita Federal e do IBGE.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="topo">
+  <div class="largura">
+    <h1>Estabelecimentos do Brasil</h1>
+    <p class="sub">Supermercados, atacarejos, minimercados e farmácias ativos, com endereço e posição no mapa. Dados abertos da Receita Federal e do IBGE.</p>
+  </div>
+</header>
+
+<main class="largura">
+  <form id="filtros" class="filtros" role="search" onsubmit="return false">
+    <div class="campo">
+      <label for="uf">Estado</label>
+      <select id="uf" disabled><option value="">Carregando…</option></select>
+    </div>
+    <div class="campo">
+      <label for="cidade">Cidade</label>
+      <select id="cidade" disabled><option value="">Escolha o estado</option></select>
+    </div>
+    <div class="campo largo">
+      <label for="texto">Nome, bairro, rua ou CNPJ</label>
+      <input id="texto" type="search" autocomplete="off" placeholder="Ex.: Atacadão, Centro, 11.222.333/0001-81" disabled>
+    </div>
+    <fieldset class="campo largo tipos" id="tipos" disabled>
+      <legend>Tipo</legend>
+      <label><input type="checkbox" value="super" checked> Supermercados</label>
+      <label><input type="checkbox" value="atacarejo" checked> Atacarejos</label>
+      <label><input type="checkbox" value="mini" checked> Minimercados</label>
+      <label><input type="checkbox" value="farmacia" checked> Farmácias</label>
+    </fieldset>
+  </form>
+
+  <p id="estado" class="estado" role="status" aria-live="polite"></p>
+  <ol id="lista" class="lista"></ol>
+  <button id="mais" class="mais" type="button" hidden>Mostrar mais</button>
+</main>
+
+<footer class="rodape">
+  <div class="largura">
+    <p id="fonte">Fontes: Receita Federal do Brasil (Dados Abertos do CNPJ) e IBGE (CNEFE, Censo 2022). Só estabelecimentos ativos; sem MEI nem Empresário Individual.</p>
+    <p><a id="baixar" href="https://github.com/cestunoapp/estabelecimentos-brasil/releases/latest">Baixar os arquivos (CSV por estado)</a> · <a href="https://github.com/cestunoapp/estabelecimentos-brasil">Código e documentação</a> · Usado pelo <a href="https://cestuno.com.br">Cestuno</a></p>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
