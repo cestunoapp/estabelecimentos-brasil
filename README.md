@@ -39,7 +39,7 @@ Colunas:
 | `hiper` | 4711-3/01 Hipermercados |
 | `super` | 4711-3/02 Supermercados |
 | `mini` | 4712-1/00 Minimercados, mercearias e armazéns |
-| `atacarejo` | 4639-7/01 Atacado de produtos alimentícios em geral, com hiper ou supermercado como atividade secundária |
+| `atacarejo` | 4639-7/01 Atacado de produtos alimentícios em geral ou 4691-5/00 Atacado de mercadorias em geral com predominância de alimentos, com hiper ou supermercado como atividade secundária |
 | `farmacia` | 4771-7/01 e 4771-7/02 Farmácias e drogarias |
 
 Um estabelecimento registrado com outra atividade (por exemplo, uma padaria que funciona como mercado) pode entrar pelo arquivo [`incluir.csv`](incluir.csv): uma linha com o CNPJ e o tipo.

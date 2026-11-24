@@ -30,12 +30,14 @@ RECEITA_BASES = [
 ]
 CNEFE_BASE = "https://ftp.ibge.gov.br/Cadastro_Nacional_de_Enderecos_para_Fins_Estatisticos/Censo_Demografico_2022/Arquivos_CNEFE/CSV/UF/"
 UFS = "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split()
-# Tipo de cada atividade principal (CNAE). Atacarejo: atacado de alimentos (4639-7/01) que também tem
-# hiper/supermercado como atividade secundária. Para um tipo novo, acrescente aqui (e no README).
+# Tipo de cada atividade principal (CNAE). Atacarejo: atacado de alimentos (4639-7/01) ou atacado de
+# mercadorias em geral com predominância de alimentos (4691-5/00) que também tem hiper/supermercado como
+# atividade secundária (sem ela, é distribuidora que não vende ao público). Para um tipo novo, acrescente aqui (e no README).
 CNAE_TIPO = {"4711301": "hiper", "4711302": "super", "4712100": "mini",
              "4771701": "farmacia", "4771702": "farmacia"}
 TIPOS = ("hiper", "super", "atacarejo", "mini", "farmacia")
 VAREJO = {"4711301", "4711302"}
+ATACADO_ALIMENTOS = {"4639701", "4691500"}
 csv.field_size_limit(10_000_000)
 
 # ---------- texto ----------
@@ -95,7 +97,7 @@ def escolher(linha, incluir=None, cnpj=None):
     if incluir and cnpj in incluir: return incluir[cnpj]
     principal = linha[11].strip()
     if principal in CNAE_TIPO: return CNAE_TIPO[principal]
-    if principal == "4639701":
+    if principal in ATACADO_ALIMENTOS:
         secund = set(x.strip() for x in linha[12].split(",") if x.strip())
         if secund & VAREJO: return "atacarejo"
     return None

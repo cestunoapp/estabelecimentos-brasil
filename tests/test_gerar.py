@@ -31,13 +31,15 @@ class Testes(unittest.TestCase):
             linha("33333333", "0001", "33", "FECHADO", "08", "4711302", "", "RUA", "X", "1", "Y", "74000300", "GO", "9373"),
             linha("44444444", "0002", "44", "DISTRIBUIDORA SO ATACADO", "02", "4639701", "4637107", "RUA", "Z", "2", "W", "74000400", "GO", "9373"),
             linha("55555555", "0001", "55", "ATACAREJO BOM", "02", "4639701", "4637107,4711302", "RODOVIA", "BR 153", "KM 5", "", "74000500", "GO", "9373"),
+            linha("56565656", "0001", "56", "ATACADO GERAL COM LOJA", "02", "4691500", "4711302", "RODOVIA", "GO 060", "KM 1", "", "74000510", "GO", "9373"),
+            linha("57575757", "0001", "57", "DISTRIBUIDORA GERAL", "02", "4691500", "4637107", "RUA", "Y", "3", "", "74000520", "GO", "9373"),
             linha("66666666", "0001", "66", "PADARIA", "02", "1091102", "", "RUA", "A", "1", "B", "74000600", "GO", "9373"),
             linha("77777777", "0001", "77", "SUPER SP", "02", "4711301", "", "RUA", "A", "1", "B", "01000000", "SP", "7107"),
             linha("88888888", "0001", "88", "DROGARIA SAUDE", "02", "4771701", "", "RUA", "C", "10", "CENTRO", "74000700", "GO", "9373"),
         ])
         saida = {}
         n = R.ler_estabelecimentos(t, {"9373": "GOIANIA"}, {"GO"}, saida)
-        self.assertEqual(n, 4)
+        self.assertEqual(n, 5)
         go = {e["cnpj"]: e for e in saida["GO"]}
         self.assertEqual(set(go), {"11111111000111", "22222222000122", "55555555000155", "88888888000188"})
         self.assertEqual((go["88888888000188"]["tipo"], go["88888888000188"]["cnae"], go["88888888000188"]["bairro"]), ("farmacia", "4771701", "Centro"))
@@ -48,6 +50,8 @@ class Testes(unittest.TestCase):
         self.assertNotIn("123", go["22222222000122"]["nome"])
         self.assertEqual(go["22222222000122"]["endereco"], "Avenida Goias, s/n - Setor Sul")
         self.assertEqual(go["55555555000155"]["tipo"], "atacarejo")
+        self.assertEqual(go["56565656000156"]["tipo"], "atacarejo", "atacado geral de alimentos com supermercado secundário")
+        self.assertNotIn("57575757000157", go, "atacado geral sem varejo fica de fora")
         txt = repr(saida)
         self.assertNotIn("email", txt); self.assertNotIn("999999999", txt)
 

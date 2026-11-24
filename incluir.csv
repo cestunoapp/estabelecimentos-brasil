@@ -2,3 +2,4 @@
 # Uma linha por CNPJ (14 números, com ou sem pontos). tipo: hiper, super, atacarejo, mini ou farmacia.
 # Só entram se estiverem ATIVOS e não forem MEI nem Empresário Individual.
 cnpj;tipo;observacao
+12279637000571;atacarejo;Super Store (Goiânia): atacado geral na Receita, loja aberta ao público
