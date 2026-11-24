@@ -65,8 +65,10 @@ def numero(s):
     return d.lstrip("0") or None
 
 def sem_numeros_longos(s):
-    """Tira sequências longas de números (código de medidor, de lote, possível CPF) de um texto."""
-    return re.sub(r"\s+", " ", re.sub(r"[\w-]*\d[\d.\-/ ]{8,}\d[\w-]*", " ", s or "")).strip()
+    """Tira sequências longas de números (código de medidor, de lote, possível CPF) de um texto, e os sinais
+    < > e caracteres de controle (a Receita às vezes traz "Sentido A > B"; quem usa os dados recusa esses sinais)."""
+    s = re.sub(r"[<>\x00-\x1f\x7f]", " ", s or "")
+    return re.sub(r"\s+", " ", re.sub(r"[\w-]*\d[\d.\-/ ]{8,}\d[\w-]*", " ", s)).strip()
 
 def montar_endereco(tipo, logradouro, num, bairro):
     rua = titulo(sem_numeros_longos(" ".join(x for x in [tipo or "", logradouro or ""] if x).strip()))

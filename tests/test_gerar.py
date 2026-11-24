@@ -16,6 +16,11 @@ def texto(linhas):
     b.seek(0); return b
 
 class Testes(unittest.TestCase):
+    def test_endereco_sem_sinais_de_html(self):
+        e = R.montar_endereco("RODOVIA", "BR 364 SENTIDO TARAUACA > FEIJO", "1410", "CORCOVADO <B>")
+        self.assertNotRegex(e, r"[<>]")
+        self.assertIn("Tarauaca", e)
+
     def test_mei_fica_de_fora(self):
         simples = texto([["11111111", "S", "20200101", "", "N", "", ""], ["22222222", "S", "20200101", "", "S", "20200101", ""], ["99999999", "N", "", "", "S", "", ""]])
         mei = R.ler_mei(simples, {"11111111", "22222222"})
