@@ -41,7 +41,7 @@ class Testes(unittest.TestCase):
         n = R.ler_estabelecimentos(t, {"9373": "GOIANIA"}, {"GO"}, saida)
         self.assertEqual(n, 5)
         go = {e["cnpj"]: e for e in saida["GO"]}
-        self.assertEqual(set(go), {"11111111000111", "22222222000122", "55555555000155", "88888888000188"})
+        self.assertEqual(set(go), {"11111111000111", "22222222000122", "55555555000155", "56565656000156", "88888888000188"})
         self.assertEqual((go["88888888000188"]["tipo"], go["88888888000188"]["cnae"], go["88888888000188"]["bairro"]), ("farmacia", "4771701", "Centro"))
         self.assertEqual(go["11111111000111"]["nome"], "Supermercado Bom de Preco")
         self.assertEqual(go["11111111000111"]["endereco"], "Rua das Flores, 120 - Centro")
